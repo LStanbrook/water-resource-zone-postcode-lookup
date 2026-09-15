@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+
+# large raw downloads and intermediate join outputs - regenerate via scripts/,
+# or grab the finished dataset from dist/ or the release download
+data/raw/onspd/
+data/raw/onspd_docs/
+data/raw/*.geojson
+data/raw/mosl/
+data/processed/*.csv
+data/processed/*.gz
+data/processed/*.gpkg
+data/processed/*.html
+data/web/_*

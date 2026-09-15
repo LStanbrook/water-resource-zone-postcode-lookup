@@ -1,0 +1,8 @@
+geopandas
+shapely
+pyproj
+pyogrio
+pandas
+requests
+openpyxl
+Pillow

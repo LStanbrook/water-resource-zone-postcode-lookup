@@ -30,7 +30,7 @@ from shapely.geometry import Polygon, MultiPolygon
 RAW = "data/raw"
 PROC = "data/processed"
 WEB = "data/web"
-LAD_NAMES_CSV = f"{RAW}/onspd_docs/Documents/LAD Local Authority District names and codes UK as at 04_25.csv"
+LAD_NAMES_CSV = f"{RAW}/onspd/lad_names.csv"
 
 
 def clean(v):
@@ -43,7 +43,11 @@ def build_lookup_shards():
     master["snap_distance_m"] = pd.to_numeric(master["snap_distance_m"], errors="coerce")
 
     lad = pd.read_csv(LAD_NAMES_CSV, dtype=str)
-    lad_map = dict(zip(lad["LAD25CD"], lad["LAD25NM"]))
+    # column names are year-versioned (LAD25CD, LAD26CD, ...) - find them rather than hardcode
+    # (English name is "...NM"; Welsh name "...NMW" also ends differently so isn't matched)
+    cd_col = next(c for c in lad.columns if c.startswith("LAD") and c.endswith("CD"))
+    nm_col = next(c for c in lad.columns if c.startswith("LAD") and c.endswith("NM"))
+    lad_map = dict(zip(lad[cd_col], lad[nm_col]))
 
     zone_cols = ["wrz_name", "water_company", "wrz_region", "wrz_source", "wrz_code"]
     zones_df = master[zone_cols].drop_duplicates().reset_index(drop=True)

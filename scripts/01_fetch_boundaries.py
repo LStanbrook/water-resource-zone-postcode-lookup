@@ -15,14 +15,21 @@ Output: data/raw/water_resource_zones.geojson
         data/raw/water_company_boundaries.geojson
         data/raw/mosl/Postal_Sector_by_Water_Resource_Zone.xlsx
         data/raw/mosl/WRZ_Map_Data.xlsx
+        data/processed/wrz_valid_bng.gpkg   (topology-repaired EA zones, BNG -
+                                              this is what later scripts pull
+                                              the Isles of Scilly zone from)
 """
 import json
 import os
 import requests
+import geopandas as gpd
+from shapely.validation import make_valid
 
 RAW = "data/raw"
+PROC = "data/processed"
 os.makedirs(RAW, exist_ok=True)
 os.makedirs(f"{RAW}/mosl", exist_ok=True)
+os.makedirs(PROC, exist_ok=True)
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
@@ -40,6 +47,18 @@ def fetch_ea_wrz():
     with open(f"{RAW}/water_resource_zones.geojson", "w", encoding="utf-8") as f:
         json.dump(d, f)
     print(f"EA WRZ: {len(d['features'])} zones")
+
+
+def build_ea_valid_bng():
+    """Topology-repair (28 of 113 raw EA zones are technically invalid -
+    self-intersecting rings) and reproject to British National Grid.
+    Only the Isles of Scilly zone from this file is actually used
+    downstream, since MOSL is the primary boundary source elsewhere."""
+    gdf = gpd.read_file(f"{RAW}/water_resource_zones.geojson")
+    gdf["geometry"] = gdf.geometry.apply(make_valid)
+    gdf = gdf.to_crs(27700)
+    gdf.to_file(f"{PROC}/wrz_valid_bng.gpkg", driver="GPKG")
+    print(f"EA zones (valid, BNG): {len(gdf)} -> {PROC}/wrz_valid_bng.gpkg")
 
 
 def fetch_mosl_wrz():
@@ -85,6 +104,7 @@ def fetch_water_company_boundaries():
 
 if __name__ == "__main__":
     fetch_ea_wrz()
+    build_ea_valid_bng()
     fetch_mosl_wrz()
     fetch_water_company_boundaries()
     fetch_mosl_tables()

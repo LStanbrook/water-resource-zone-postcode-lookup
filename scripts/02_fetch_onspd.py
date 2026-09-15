@@ -9,6 +9,8 @@ automatically rather than hardcoding a dated URL.
 
 Output: data/processed/onspd_ew_live.csv
         (columns: pcds, doterm, ctry26cd, lad26cd, east1m, north1m, gridind)
+        data/raw/onspd/lad_names.csv
+        (LAD code -> name, for display in the web tool)
 """
 import io
 import os
@@ -66,6 +68,11 @@ def download_and_filter():
     df = pd.concat(chunks, ignore_index=True)
     df.to_csv(OUT, index=False)
     print(f"Live England & Wales postcodes: {len(df)} -> {OUT}")
+
+    lad_name = next(n for n in z.namelist() if n.startswith("Documents/LAD Local Authority District names and codes"))
+    with z.open(lad_name) as src, open(f"{RAW}/lad_names.csv", "wb") as dst:
+        dst.write(src.read())
+    print(f"LAD names -> {RAW}/lad_names.csv")
 
 
 if __name__ == "__main__":

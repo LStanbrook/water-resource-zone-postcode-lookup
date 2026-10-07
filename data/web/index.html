@@ -781,7 +781,14 @@ svg.leaflet-zoom-animated { will-change: transform; }
         var i = parseInt(btn.getAttribute('data-i'),10);
         var f = FILES[i];
         downloadsP.then(function(downloads){
-          if(!downloads){ setStatus(i, 'Downloads aren’t available in this view.', true); return; }
+          if(!downloads){
+            // Self-hosted: the web server maps downloads/ to the repo's dist/ zips
+            var a = document.createElement('a');
+            a.href = 'downloads/' + f.filename;
+            a.download = f.filename;
+            document.body.appendChild(a); a.click(); a.remove();
+            return;
+          }
           btn.disabled = true;
           setStatus(i, 'Preparing…', false);
           return fetch(f.path).then(function(r){

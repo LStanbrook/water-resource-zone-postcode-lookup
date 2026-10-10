@@ -1,4 +1,8 @@
-<title>WRZ Finder</title>
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Resource Zone Postcode Checker</title>
+<meta name="description" content="Find the Water Resource Zone and water company for any postcode in England &amp; Wales, one at a time or in bulk.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 /* required styles */
@@ -235,21 +239,27 @@ svg.leaflet-zoom-animated { will-change: transform; }
   .stat-strip{ display:flex; flex-wrap:wrap; gap:8px; font-family:var(--font-mono); font-size:12.5px; color:var(--ink-muted); }
   .stat-strip span{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:4px 9px; font-variant-numeric:tabular-nums; }
 
-  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);}
+  .tabs{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:4px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:4px; box-shadow:var(--shadow);
+  }
   .tab-btn{
-    font-family:var(--font-body);
-    font-weight:600;
-    font-size:14.5px;
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:.01em;
     background:none;
     border:none;
+    border-radius:9px;
     color:var(--ink-muted);
-    padding:10px 4px;
+    padding:11px 8px;
     cursor:pointer;
-    border-bottom:2px solid transparent;
-    margin-bottom:-1px;
+    transition:background .15s, color .15s;
   }
-  .tab-btn[aria-selected="true"]{ color:var(--ink); border-bottom-color:var(--accent); }
-  .tab-btn:hover{ color:var(--ink); }
+  .tab-btn[aria-selected="true"]{ background:var(--accent); color:var(--accent-ink); }
+  .tab-btn:not([aria-selected="true"]):hover{ background:var(--accent-soft); color:var(--ink); }
+  @media (max-width:420px){ .tab-btn{font-size:14.5px;padding:10px 4px;} }
   .tab-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   [hidden]{ display:none !important; }
 
@@ -364,6 +374,35 @@ svg.leaflet-zoom-animated { will-change: transform; }
   .dl-btn:disabled{opacity:.6;cursor:default;}
   .dl-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
+  #batchInput{
+    width:100%; min-height:170px; resize:vertical; font-family:var(--font-mono); font-size:14px; line-height:1.5;
+    background:var(--surface-2); border:1.5px solid var(--border); border-radius:9px; padding:12px 14px; color:var(--ink);
+  }
+  #batchInput::placeholder{color:var(--ink-muted);font-family:var(--font-body);}
+  #batchInput:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+  #batchInput.drag{border-color:var(--accent);background:var(--accent-soft);}
+  .batch-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  #batchRunBtn{
+    font-family:var(--font-body); font-weight:600; font-size:15px; background:var(--accent);
+    color:var(--accent-ink); border:none; border-radius:9px; padding:11px 20px; cursor:pointer;
+  }
+  #batchRunBtn:hover{filter:brightness(1.06);}
+  #batchRunBtn:disabled{opacity:.6;cursor:default;}
+  #batchRunBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .batch-actions:has(#batchFile:focus-visible) label.dl-btn{outline:2px solid var(--accent);outline-offset:2px;}
+  .batch-file-name{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-muted);}
+  #batchResult{display:flex;flex-direction:column;gap:14px;margin-top:14px;}
+  .batch-summary{display:flex;flex-wrap:wrap;gap:8px;}
+  .batch-table-wrap{overflow-x:auto;}
+  table.batch{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.batch th{
+    text-align:left; font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-muted); font-weight:500; padding:0 10px 6px 0; border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  table.batch td{padding:8px 10px 8px 0;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.batch td.mono{font-family:var(--font-mono);white-space:nowrap;}
+  table.batch .pill{font-size:11.5px;padding:3px 9px;white-space:nowrap;}
+
   .msg-card{
     background:var(--surface-2); border:1px dashed var(--border); border-radius:12px;
     padding:20px; color:var(--ink-muted); font-size:14.5px; line-height:1.55;
@@ -395,8 +434,8 @@ svg.leaflet-zoom-animated { will-change: transform; }
 <div class="wrap">
 
   <header>
-    <div class="eyebrow">England &amp; Wales &middot; Water Resource Zones</div>
-    <h1>Which zone is your postcode in?</h1>
+    <div class="eyebrow">England &amp; Wales</div>
+    <h1>Water Resource Zone postcode checker</h1>
     <p class="lede">Every live postcode matched to its Water Resource Zone and water company &mdash; the area a company plans and balances supply for as one system.</p>
     <div class="stat-strip">
       <span>1,587,255 postcodes</span>
@@ -408,6 +447,7 @@ svg.leaflet-zoom-animated { will-change: transform; }
 
   <div class="tabs" role="tablist">
     <button class="tab-btn" id="tabBtnSearch" role="tab" aria-selected="true" aria-controls="panel-search">Search</button>
+    <button class="tab-btn" id="tabBtnBatch" role="tab" aria-selected="false" aria-controls="panel-batch">Batch</button>
     <button class="tab-btn" id="tabBtnMap" role="tab" aria-selected="false" aria-controls="panel-map">Map</button>
     <button class="tab-btn" id="tabBtnData" role="tab" aria-selected="false" aria-controls="panel-data">Data</button>
   </div>
@@ -424,10 +464,25 @@ svg.leaflet-zoom-animated { will-change: transform; }
     <div id="resultArea" aria-live="polite"></div>
   </div>
 
+  <div id="panel-batch" role="tabpanel" hidden>
+    <div class="search-card">
+      <label for="batchInput" class="breakdown-title">Look up many postcodes at once</label>
+      <textarea id="batchInput" spellcheck="false" placeholder="Paste postcodes, one per line &mdash; or a spreadsheet/CSV with a postcode column, or drop a file here"></textarea>
+      <div class="batch-actions">
+        <button id="batchRunBtn" type="button">Look up all</button>
+        <label class="dl-btn" for="batchFile">Upload CSV / text file</label>
+        <input id="batchFile" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain" class="sr-only">
+        <span id="batchFileName" class="batch-file-name"></span>
+      </div>
+      <div class="hint">Uploaded tables keep all their original columns, with the results added on the end &mdash; the postcode column is found by its header (e.g. <b>Postcode</b>), or by its contents if there's no header. Everything runs in your browser; nothing is uploaded anywhere.</div>
+    </div>
+    <div id="batchResult" aria-live="polite"></div>
+  </div>
+
   <div id="panel-map" role="tabpanel" hidden>
     <div id="mapContainer"></div>
     <div id="mapLegend" class="map-legend"></div>
-    <div class="map-note">Shown at simplified resolution for a fast-loading overview &mdash; the postcode search above uses the full-precision boundaries. Zones are coloured by company only here (hover for the zone name); tiny (&lt;1km&sup2;) gaps between neighbouring zones of the same company &mdash; digitisation noise in the source data &mdash; are visually closed, while genuine larger gaps, like the ~103km&sup2; hole near the Wye Valley, are left visible. Basemap: static Esri World Street Map export, fetched once and hosted alongside this page.</div>
+    <div class="map-note">Shown at simplified resolution for a fast-loading overview &mdash; the postcode search above uses the full-precision boundaries. Zones are coloured by company only here (hover for the zone name); tiny (&lt;1km&sup2;) gaps between neighbouring zones of the same company &mdash; digitisation noise in the source data &mdash; are visually closed, while genuine larger gaps, like the ~103km&sup2; hole near the Wye Valley, are left visible. Basemap: Esri World Street Map.</div>
   </div>
 
   <div id="panel-data" role="tabpanel" hidden>
@@ -463,7 +518,9 @@ svg.leaflet-zoom-animated { will-change: transform; }
       return r.text();
     }).then(function(txt){
       if(!txt) return [];
-      return txt.split('\n').map(function(line){
+      // \r?\n: a Windows git checkout converts the shards to CRLF, which would otherwise leave
+      // a stray \r on the last field (the MOSL QA code) and make every QA check read "consistent"
+      return txt.split(/\r?\n/).filter(Boolean).map(function(line){
         var p = line.split('|');
         return {
           rest: p[0],
@@ -673,9 +730,276 @@ svg.leaflet-zoom-animated { will-change: transform; }
     if(e.key==='Enter') runSearch(this.value, false);
   });
 
+  // ---- file saving: claude.ai artifact runtime if present, plain browser download otherwise ----
+  var downloadsP = (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null);
+
+  function saveBlob(blob, filename){
+    return downloadsP.then(function(downloads){
+      if(downloads) return downloads.save({filename: filename, data: blob});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+      return {status:'saved'};
+    });
+  }
+
+  // ---- batch lookup ----
+  var BATCH_MAX_ROWS = 200000;
+  var BATCH_PREVIEW_ROWS = 100;
+  var PC_RE = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/;
+  var shardIndexCache = {};
+
+  // rest-of-postcode -> row, built once per area so each lookup is O(1)
+  function loadShardIndex(area){
+    if (shardIndexCache[area]) return shardIndexCache[area];
+    shardIndexCache[area] = loadShard(area).then(function(rows){
+      var idx = new Map();
+      rows.forEach(function(r){ idx.set(r.rest, r); });
+      return idx;
+    });
+    return shardIndexCache[area];
+  }
+
+  function looksLikePostcode(s){
+    return PC_RE.test(String(s).trim().toUpperCase().replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' '));
+  }
+
+  // Minimal RFC 4180 parser: quoted fields, escaped quotes, CRLF/LF line endings
+  function parseDelimited(text, delim){
+    var rows = [], row = [], field = '', inQuotes = false;
+    for (var i=0; i<text.length; i++){
+      var c = text[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (text[i+1] === '"'){ field += '"'; i++; }
+          else inQuotes = false;
+        } else field += c;
+      } else if (c === '"' && field === '') inQuotes = true;
+      else if (c === delim){ row.push(field); field = ''; }
+      else if (c === '\n' || c === '\r'){
+        if (c === '\r' && text[i+1] === '\n') i++;
+        row.push(field); rows.push(row); row = []; field = '';
+      } else field += c;
+    }
+    if (field !== '' || row.length){ row.push(field); rows.push(row); }
+    return rows.filter(function(r){ return r.some(function(v){ return v.trim() !== ''; }); });
+  }
+
+  // Turns pasted text or a file into {header, rows, pcCol}. Plain lists become a one-column table.
+  function readBatchInput(text){
+    text = text.replace(/^﻿/, '');
+    var firstLine = text.split(/\r?\n/).find(function(l){ return l.trim() !== ''; }) || '';
+    var delim = firstLine.indexOf('\t') > -1 ? '\t' : (firstLine.indexOf(',') > -1 ? ',' : (firstLine.indexOf(';') > -1 ? ';' : null));
+
+    if (!delim){
+      var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+      if (lines.length && !looksLikePostcode(lines[0]) && /post\s*code|^pcds?$/i.test(lines[0])) lines.shift();
+      return {header:['input'], rows:lines.map(function(l){ return [l]; }), pcCol:0};
+    }
+
+    var rows = parseDelimited(text, delim);
+    if (!rows.length) return {header:[], rows:[], pcCol:-1};
+    var first = rows[0];
+    var hasHeader = !first.some(looksLikePostcode);
+    var pcCol = -1;
+    if (hasHeader){
+      for (var i=0; i<first.length; i++){
+        if (/post\s*_?\s*code|^pcds?$/i.test(first[i].trim())){ pcCol = i; break; }
+      }
+    }
+    if (pcCol === -1){
+      // No usable header: pick the column where the most sample values look like postcodes
+      var sample = rows.slice(hasHeader ? 1 : 0, (hasHeader ? 1 : 0) + 200);
+      var width = Math.max.apply(null, rows.map(function(r){ return r.length; }));
+      var best = 0;
+      for (var c=0; c<width; c++){
+        var hits = sample.filter(function(r){ return r[c] && looksLikePostcode(r[c]); }).length;
+        if (hits > best){ best = hits; pcCol = c; }
+      }
+    }
+    var header = hasHeader ? first : first.map(function(_, i){ return 'column_'+(i+1); });
+    return {header:header, rows:hasHeader ? rows.slice(1) : rows, pcCol:pcCol};
+  }
+
+  // high: inside a boundary and agrees with MOSL's sector table
+  // medium: inside a boundary, but MOSL's table disagrees or couldn't check it
+  // low: outside every boundary, snapped to the nearest zone
+  function batchConfidence(row){
+    if (row.mcode === '1') return 'low';
+    if (row.mcode === '2') return 'none';
+    return (row.qcode === '1' || row.qcode === '2') ? 'medium' : 'high';
+  }
+
+  var EMPTY_RESULT = {postcode:'', company:'', zone:'', code:'', region:'', lad:'', method:'', dist:'', qa:'', confidence:'none', note:''};
+
+  function lookupOne(raw, zones, lads){
+    var res = Object.assign({}, EMPTY_RESULT);
+    var q = parseInput(String(raw || ''));
+    if (!q){ res.method = 'invalid'; res.note = 'Blank'; return Promise.resolve(res); }
+    if (q.error === 'unknown-area'){
+      res.method = looksLikePostcode(raw) ? 'outside_coverage' : 'invalid';
+      res.note = res.method === 'invalid' ? 'Not a recognisable postcode' : 'Postcode area '+q.area+' is outside England & Wales';
+      return Promise.resolve(res);
+    }
+    if (q.type !== 'full'){ res.method = 'invalid'; res.note = 'Not a full postcode (district/sector only)'; return Promise.resolve(res); }
+    res.postcode = q.display;
+    return loadShardIndex(q.area).then(function(idx){
+      var row = idx.get(q.rest);
+      if (!row){ res.method = 'not_found'; res.note = 'Not in the live ONS Postcode Directory (Aug 2026): terminated, mistyped, or too new'; return res; }
+      var z = row.zid != null ? zones[row.zid] : null;
+      res.company = z ? z.c : '';
+      res.zone = z ? z.n : '';
+      res.code = z ? z.code : '';
+      res.region = z ? z.r : '';
+      res.lad = row.ladid != null ? (lads[row.ladid] || '') : '';
+      res.method = row.mcode === '1' ? 'nearest' : (row.mcode === '2' ? 'no_coordinates' : 'within');
+      res.dist = row.mcode === '1' && row.dist != null ? Math.round(row.dist) : (row.mcode === '2' ? '' : 0);
+      res.qa = row.qcode === '1' ? 'mismatch' : (row.qcode === '2' ? 'not_checked' : 'match');
+      if (row.mcode === '2') res.qa = '';
+      res.confidence = batchConfidence(row);
+      if (row.mcode === '1') res.note = 'Outside every zone boundary; nearest zone used ('+fmtDist(row.dist)+' away)';
+      else if (row.mcode === '2') res.note = 'No grid reference in ONSPD, so no zone could be assigned';
+      else if (row.qcode === '1') res.note = "Disagrees with MOSL's sector-level table; likely a boundary-edge case";
+      else if (row.qcode === '2') res.note = "Not in MOSL's sector-level table, so couldn't be cross-checked";
+      return res;
+    });
+  }
+
+  var RESULT_COLS = [
+    ['postcode','postcode'], ['water_company','company'], ['wrz_name','zone'], ['wrz_code','code'],
+    ['wrz_region','region'], ['local_authority','lad'], ['match_method','method'], ['snap_distance_m','dist'],
+    ['mosl_sector_qa','qa'], ['confidence','confidence'], ['note','note']
+  ];
+
+  function csvCell(v){
+    v = v == null ? '' : String(v);
+    return /[",\r\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+  }
+
+  var CONF_PILL = {
+    high:   {cls:'good',    label:'High'},
+    medium: {cls:'warn',    label:'Medium'},
+    low:    {cls:'bad',     label:'Low'},
+    none:   {cls:'neutral', label:'No match'}
+  };
+
+  var batchFileText = null, batchFileBase = 'postcodes';
+
+  function runBatch(){
+    var out = document.getElementById('batchResult');
+    var btn = document.getElementById('batchRunBtn');
+    var text = batchFileText != null ? batchFileText : document.getElementById('batchInput').value;
+    var table = readBatchInput(text);
+
+    if (!table.rows.length){ out.innerHTML = '<div class="msg-card">Paste some postcodes or upload a file first.</div>'; return; }
+    if (table.pcCol === -1){ out.innerHTML = '<div class="msg-card">Couldn&rsquo;t find a postcode column. Give it a header like <b>Postcode</b>, or make sure the column contains full postcodes.</div>'; return; }
+    if (table.rows.length > BATCH_MAX_ROWS){ out.innerHTML = '<div class="msg-card">That&rsquo;s '+table.rows.length.toLocaleString()+' rows &mdash; the limit is '+BATCH_MAX_ROWS.toLocaleString()+' at a time. For bigger jobs, download the full dataset from the Data tab.</div>'; return; }
+
+    btn.disabled = true;
+    out.innerHTML = '<div class="msg-card">Looking up '+table.rows.length.toLocaleString()+' postcode'+(table.rows.length===1?'':'s')+'&hellip;</div>';
+
+    Promise.all([zonesP, ladsP]).then(function(meta){
+      return Promise.all(table.rows.map(function(r){ return lookupOne(r[table.pcCol], meta[0], meta[1]); }));
+    }).then(function(results){
+      renderBatch(table, results);
+    }).catch(function(err){
+      out.innerHTML = '<div class="msg-card">Couldn&rsquo;t load the lookup data. Please try again.</div>';
+      console.error(err);
+    }).finally(function(){ btn.disabled = false; });
+  }
+
+  function renderBatch(table, results){
+    var out = document.getElementById('batchResult');
+    var counts = {high:0, medium:0, low:0, none:0};
+    results.forEach(function(r){ counts[r.confidence]++; });
+    var total = results.length;
+
+    var html = '<div class="result-card">';
+    html += '<div class="breakdown-head"><div><div class="eyebrow" style="margin-bottom:4px;">'+total.toLocaleString()+' row'+(total===1?'':'s')+' &middot; postcode column: '+esc(table.header[table.pcCol] || 'input')+'</div>';
+    html += '<div class="breakdown-title">'+(total - counts.none).toLocaleString()+' matched to a zone</div></div>';
+    html += '<button type="button" class="dl-btn" id="batchDlBtn">Download CSV</button></div>';
+
+    html += '<div class="batch-summary">';
+    ['high','medium','low','none'].forEach(function(k){
+      if (counts[k]) html += '<span class="pill '+CONF_PILL[k].cls+'">'+CONF_PILL[k].label+': '+counts[k].toLocaleString()+'</span>';
+    });
+    html += '</div>';
+    html += '<div class="note-line"><b>High</b> = inside the zone boundary and agrees with MOSL&rsquo;s own sector table. <b>Medium</b> = inside the boundary, but MOSL&rsquo;s table disagrees or couldn&rsquo;t check it. <b>Low</b> = fell outside every boundary and was snapped to the nearest zone (distance in the CSV). <b>No match</b> = invalid, not found, outside England &amp; Wales, or no coordinates.</div>';
+
+    html += '<div class="batch-table-wrap"><table class="batch"><thead><tr><th>Input</th><th>Zone</th><th>Company</th><th>Confidence</th></tr></thead><tbody>';
+    results.slice(0, BATCH_PREVIEW_ROWS).forEach(function(r, i){
+      var p = CONF_PILL[r.confidence];
+      html += '<tr><td class="mono">'+esc(table.rows[i][table.pcCol] || '')+'</td>';
+      html += '<td>'+(r.zone ? esc(r.zone)+(r.code ? '<div class="bd-company mono">'+esc(r.code)+'</div>' : '') : '<span class="bd-company">'+esc(r.note)+'</span>')+'</td>';
+      html += '<td>'+esc(r.company || '')+'</td>';
+      html += '<td><span class="pill '+p.cls+'"'+(r.note && r.zone ? ' title="'+esc(r.note)+'"' : '')+'>'+p.label+'</span></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    if (total > BATCH_PREVIEW_ROWS) html += '<div class="note-line">Showing the first '+BATCH_PREVIEW_ROWS+' rows &mdash; the CSV has all '+total.toLocaleString()+'.</div>';
+    html += '<div class="note-line dl-status" id="batchDlStatus"></div>';
+    html += '</div>';
+    out.innerHTML = html;
+
+    document.getElementById('batchDlBtn').addEventListener('click', function(){
+      var status = document.getElementById('batchDlStatus');
+      var header = table.header.concat(RESULT_COLS.map(function(c){ return c[0]; }));
+      var lines = [header.map(csvCell).join(',')];
+      results.forEach(function(r, i){
+        var orig = table.rows[i].slice();
+        while (orig.length < table.header.length) orig.push('');
+        lines.push(orig.concat(RESULT_COLS.map(function(c){ return r[c[1]]; })).map(csvCell).join(','));
+      });
+      // BOM so Excel opens it as UTF-8
+      var blob = new Blob(['﻿' + lines.join('\r\n') + '\r\n'], {type:'text/csv'});
+      saveBlob(blob, batchFileBase + '_water_zones.csv').then(function(res){
+        status.textContent = res && res.status === 'saved' ? '' : 'Delivered.';
+      }).catch(function(err){
+        if (!(err && err.code === 'declined')){ status.textContent = 'Couldn’t download — try again.'; console.error(err); }
+      });
+    });
+  }
+
+  function setBatchFile(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      batchFileText = reader.result;
+      batchFileBase = file.name.replace(/\.[^.]+$/, '') || 'postcodes';
+      var input = document.getElementById('batchInput');
+      input.value = '';
+      input.placeholder = 'Using uploaded file — type or paste here to use that instead';
+      document.getElementById('batchFileName').textContent = file.name;
+      runBatch();
+    };
+    reader.readAsText(file);
+  }
+
+  function clearBatchFile(){
+    batchFileText = null; batchFileBase = 'postcodes';
+    document.getElementById('batchFileName').textContent = '';
+    document.getElementById('batchFile').value = '';
+  }
+
+  document.getElementById('batchRunBtn').addEventListener('click', runBatch);
+  document.getElementById('batchFile').addEventListener('change', function(){
+    if (this.files && this.files[0]) setBatchFile(this.files[0]);
+  });
+  (function(){
+    var ta = document.getElementById('batchInput');
+    ta.addEventListener('input', function(){ if (batchFileText != null && ta.value) clearBatchFile(); });
+    ta.addEventListener('dragover', function(e){ e.preventDefault(); ta.classList.add('drag'); });
+    ta.addEventListener('dragleave', function(){ ta.classList.remove('drag'); });
+    ta.addEventListener('drop', function(e){
+      ta.classList.remove('drag');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]){ e.preventDefault(); setBatchFile(e.dataTransfer.files[0]); }
+    });
+  })();
+
   // ---- tabs ----
   var TABS = {
     search: {btn: document.getElementById('tabBtnSearch'), panel: document.getElementById('panel-search')},
+    batch:  {btn: document.getElementById('tabBtnBatch'),  panel: document.getElementById('panel-batch')},
     map:    {btn: document.getElementById('tabBtnMap'),    panel: document.getElementById('panel-map')},
     data:   {btn: document.getElementById('tabBtnData'),   panel: document.getElementById('panel-data')}
   };
@@ -709,10 +1033,23 @@ svg.leaflet-zoom-animated { will-change: transform; }
 
     // give the browser a paint frame after un-hiding the tab before Leaflet measures the container
     requestAnimationFrame(function(){
-      var map = L.map('mapContainer', {attributionControl:false, zoomControl:true}).setView([52.8,-2.2], 6);
+      // Self-hosted: live Esri street tiles (same source as the static image) - covers any extent
+      // and stays sharp when zoomed. Inside claude.ai, tile servers are blocked, so fall back to
+      // the static export, which only covers BASEMAP_BOUNDS.
+      var useTiles = !(window.claude && window.claude.use);
+      var map = L.map('mapContainer', {
+        attributionControl:useTiles, zoomControl:true, minZoom:5, maxZoom:useTiles ? 16 : 10,
+        maxBounds:[[47.5,-12],[58.5,6]], maxBoundsViscosity:0.8
+      }).setView([52.8,-2.2], 6);
       map.invalidateSize();
 
-      L.imageOverlay('basemap.jpg', BASEMAP_BOUNDS, {interactive:false}).addTo(map);
+      if (useTiles){
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom:16, attribution:'Basemap &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        L.imageOverlay('basemap.jpg', BASEMAP_BOUNDS, {interactive:false}).addTo(map);
+      }
 
       Promise.all([
         fetch('map_fill.json').then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status+' loading map_fill.json'); return r.json(); }),
@@ -773,8 +1110,6 @@ svg.leaflet-zoom-animated { will-change: transform; }
       el.textContent = text;
       el.style.color = isError ? 'var(--bad)' : 'var(--ink-muted)';
     }
-
-    var downloadsP = (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null);
 
     container.querySelectorAll('.dl-btn').forEach(function(btn){
       btn.addEventListener('click', function(){

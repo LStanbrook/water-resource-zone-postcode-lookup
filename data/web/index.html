@@ -428,15 +428,50 @@ svg.leaflet-zoom-animated { will-change: transform; }
   footer a{color:var(--accent);}
   footer .src-list{font-family:var(--font-mono);font-size:11.5px;}
 
+  .header-top{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .about-toggle{
+    display:inline-flex; align-items:center; gap:7px; flex:0 0 auto;
+    font-family:var(--font-body); font-weight:600; font-size:14px;
+    background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:99px;
+    padding:7px 14px; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .about-toggle:hover{border-color:var(--accent);color:var(--accent);}
+  .about-toggle[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .about-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .about-panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow);
+    padding:24px; font-size:15px; line-height:1.6; animation:rise .25s ease both;
+  }
+  .about-panel h2{font-family:var(--font-display);font-weight:800;font-size:22px;margin:0 0 10px;}
+  .about-panel h3{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); font-weight:500; margin:26px 0 4px; padding-top:18px; border-top:1px solid var(--border);
+  }
+  .about-panel h4{font-family:var(--font-display);font-weight:700;font-size:16.5px;margin:20px 0 6px;}
+  .about-panel p{margin:0;color:var(--ink);}
+  .about-panel ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;}
+  .about-panel a{color:var(--accent);}
+
+  .conf-key{display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--ink-muted);line-height:1.45;}
+  .conf-key div{display:flex;gap:10px;align-items:baseline;}
+  .conf-key .pill{flex:0 0 92px;justify-content:flex-start;font-size:11.5px;padding:3px 9px;}
+
   .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 </style>
 
 <div class="wrap">
 
   <header>
-    <div class="eyebrow">England &amp; Wales</div>
+    <div class="header-top">
+      <div class="eyebrow">Postcode &rarr; water supplier lookup</div>
+      <button type="button" class="about-toggle" id="aboutBtn" aria-expanded="false" aria-controls="panel-about">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5"/><path d="M12 8h.01"/></svg>
+        <span>About &amp; FAQ</span>
+      </button>
+    </div>
     <h1>Water Resource Zone postcode checker</h1>
-    <p class="lede">Every live postcode matched to its Water Resource Zone and water company &mdash; the area a company plans and balances supply for as one system.</p>
+    <p class="lede">Find the Water Resource Zone for any postcode in England &amp; Wales, and which water company supplies it &mdash; one at a time, or thousands at once.</p>
     <div class="stat-strip">
       <span>1,587,255 postcodes</span>
       <span>129 zones</span>
@@ -459,22 +494,21 @@ svg.leaflet-zoom-animated { will-change: transform; }
         <input id="pcInput" type="text" placeholder="e.g. SW1A 1AA or CF10" autocomplete="off" spellcheck="false">
         <button id="searchBtn" type="button">Find zone</button>
       </div>
-      <div class="hint">Full postcode gives an exact match &middot; just a <b>district</b> (e.g. <b>CF10</b>) or <b>sector</b> (e.g. <b>CF10 1</b>) shows the breakdown if it's split across zones &mdash; click a zone in that breakdown to see which postcodes it covers.</div>
+      <div class="hint">A full postcode, or a <b>district</b> (<b>CF10</b>) or <b>sector</b> (<b>CF10 1</b>) to see how it splits across zones.</div>
     </div>
     <div id="resultArea" aria-live="polite"></div>
   </div>
 
   <div id="panel-batch" role="tabpanel" hidden>
     <div class="search-card">
-      <label for="batchInput" class="breakdown-title">Look up many postcodes at once</label>
-      <textarea id="batchInput" spellcheck="false" placeholder="Paste postcodes, one per line &mdash; or a spreadsheet/CSV with a postcode column, or drop a file here"></textarea>
+      <label for="batchInput" class="breakdown-title">Look up many postcodes or coordinates at once</label>
+      <textarea id="batchInput" spellcheck="false" placeholder="Paste postcodes or latitude, longitude pairs, one per line &mdash; or a spreadsheet/CSV, or drop a file here"></textarea>
       <div class="batch-actions">
         <button id="batchRunBtn" type="button">Look up all</button>
         <label class="dl-btn" for="batchFile">Upload CSV / text file</label>
         <input id="batchFile" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain" class="sr-only">
         <span id="batchFileName" class="batch-file-name"></span>
       </div>
-      <div class="hint">Uploaded tables keep all their original columns, with the results added on the end &mdash; the postcode column is found by its header (e.g. <b>Postcode</b>), or by its contents if there's no header. Everything runs in your browser; nothing is uploaded anywhere.</div>
     </div>
     <div id="batchResult" aria-live="polite"></div>
   </div>
@@ -482,7 +516,6 @@ svg.leaflet-zoom-animated { will-change: transform; }
   <div id="panel-map" role="tabpanel" hidden>
     <div id="mapContainer"></div>
     <div id="mapLegend" class="map-legend"></div>
-    <div class="map-note">Shown at simplified resolution for a fast-loading overview &mdash; the postcode search above uses the full-precision boundaries. Zones are coloured by company only here (hover for the zone name); tiny (&lt;1km&sup2;) gaps between neighbouring zones of the same company &mdash; digitisation noise in the source data &mdash; are visually closed, while genuine larger gaps, like the ~103km&sup2; hole near the Wye Valley, are left visible. Basemap: Esri World Street Map.</div>
   </div>
 
   <div id="panel-data" role="tabpanel" hidden>
@@ -493,10 +526,35 @@ svg.leaflet-zoom-animated { will-change: transform; }
     </div>
   </div>
 
+  <section id="panel-about" class="about-panel" hidden>
+    <h2>About this tool</h2>
+    <p>Find which <strong>Water Resource Zone</strong> and <strong>water company</strong> covers any live postcode in England &amp; Wales &mdash; one at a time, in bulk, or on a map.</p>
+
+    <h3>Frequently asked questions</h3>
+
+    <h4>What is a Water Resource Zone?</h4>
+    <p>The area a water company plans and balances its supply for as one system &mdash; everyone in a zone shares the same risk of supply shortfall.</p>
+
+    <h4>Where does the data come from?</h4>
+    <p>Zone boundaries from <a href="https://mosl.co.uk/market-insight/market-performance/environmental-impact/water-resource-zones-wrzs" target="_blank" rel="noopener">MOSL</a> (128 zones) plus the Environment Agency's Isles of Scilly zone; postcodes from the <a href="https://geoportal.statistics.gov.uk/" target="_blank" rel="noopener">ONS Postcode Directory</a> (August 2026). Each postcode is placed in the zone containing its grid reference, and cross-checked against MOSL's own sector lookup &mdash; 97.6% agree exactly.</p>
+
+    <h4>What do High, Medium and Low confidence mean?</h4>
+    <ul>
+      <li><strong>High</strong> &mdash; inside the zone, and confirmed by MOSL's sector table.</li>
+      <li><strong>Medium</strong> &mdash; inside the zone, but MOSL's table disagrees or doesn't cover it (or, for coordinates, within 50&nbsp;m of a zone edge).</li>
+      <li><strong>Low</strong> &mdash; just outside every zone boundary, so the nearest zone was used.</li>
+      <li><strong>No match</strong> &mdash; invalid, not found, or outside England &amp; Wales.</li>
+    </ul>
+
+    <h4>About the batch converter</h4>
+    <p>Paste a list or upload a CSV of postcodes or latitude/longitude coordinates &mdash; up to 200,000 rows. Any other columns in your file are kept, with the results added on the end. Coordinates are matched against slightly simplified boundaries (~30&nbsp;m), so check points near a zone edge on the map. Everything runs in your browser; your file is never uploaded.</p>
+
+    <h4>Why can't my postcode be found?</h4>
+    <p>It may be mistyped, terminated, or newer than August 2026. Scotland and Northern Ireland aren't covered.</p>
+  </section>
+
   <footer>
-    <div>Zone boundaries: <a href="https://mosl.co.uk/market-insight/market-performance/environmental-impact/water-resource-zones-wrzs" target="_blank" rel="noopener">MOSL</a> (2025, 128 zones) plus the Environment Agency's Isles of Scilly zone, which MOSL omits. Postcodes: <a href="https://geoportal.statistics.gov.uk/" target="_blank" rel="noopener">ONS Postcode Directory</a>, August 2026, live postcodes only.</div>
-    <div>1,203 postcodes (0.08%) fell outside every zone boundary in the source data and were assigned to the nearest zone &mdash; each is flagged with the distance. 851 postcodes have no grid reference in ONSPD at all and can't be assigned. Results were spot-checked against MOSL's own postal-sector lookup table: 97.6% agree exactly.</div>
-    <div class="src-list">Coverage: England &amp; Wales only &mdash; Scotland and Northern Ireland are outside these datasets entirely.</div>
+    <div>Data: <a href="https://mosl.co.uk/market-insight/market-performance/environmental-impact/water-resource-zones-wrzs" target="_blank" rel="noopener">MOSL</a> &amp; Environment Agency zone boundaries &middot; <a href="https://geoportal.statistics.gov.uk/" target="_blank" rel="noopener">ONS Postcode Directory</a>, Aug 2026 &middot; England &amp; Wales only</div>
   </footer>
 
 </div>
@@ -787,42 +845,255 @@ svg.leaflet-zoom-animated { will-change: transform; }
     return rows.filter(function(r){ return r.some(function(v){ return v.trim() !== ''; }); });
   }
 
-  // Turns pasted text or a file into {header, rows, pcCol}. Plain lists become a one-column table.
-  function readBatchInput(text){
-    text = text.replace(/^﻿/, '');
-    var firstLine = text.split(/\r?\n/).find(function(l){ return l.trim() !== ''; }) || '';
-    var delim = firstLine.indexOf('\t') > -1 ? '\t' : (firstLine.indexOf(',') > -1 ? ',' : (firstLine.indexOf(';') > -1 ? ';' : null));
+  // ---- coordinate parsing ----
+  function parseNum(s){
+    s = String(s == null ? '' : s).trim();
+    return /^[-+]?\d{1,3}(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+  }
+  function inUkLat(v){ return v >= 49 && v <= 61; }
+  function inUkLon(v){ return v >= -9 && v <= 2.5; }
 
-    if (!delim){
-      var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
-      if (lines.length && !looksLikePostcode(lines[0]) && /post\s*code|^pcds?$/i.test(lines[0])) lines.shift();
-      return {header:['input'], rows:lines.map(function(l){ return [l]; }), pcCol:0};
+  // Two numbers (or one cell holding both, e.g. "51.48 -3.17") -> {lat, lon}, or null.
+  // Order is worked out from UK ranges, so "-0.12, 51.50" is read as lon, lat.
+  function coordPair(a, b){
+    if (b == null || String(b).trim() === ''){
+      var m = String(a == null ? '' : a).trim().match(/^([-+]?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*([-+]?\d{1,3}(?:\.\d+)?)$/);
+      if (!m) return null;
+      a = m[1]; b = m[2];
     }
-
-    var rows = parseDelimited(text, delim);
-    if (!rows.length) return {header:[], rows:[], pcCol:-1};
-    var first = rows[0];
-    var hasHeader = !first.some(looksLikePostcode);
-    var pcCol = -1;
-    if (hasHeader){
-      for (var i=0; i<first.length; i++){
-        if (/post\s*_?\s*code|^pcds?$/i.test(first[i].trim())){ pcCol = i; break; }
-      }
-    }
-    if (pcCol === -1){
-      // No usable header: pick the column where the most sample values look like postcodes
-      var sample = rows.slice(hasHeader ? 1 : 0, (hasHeader ? 1 : 0) + 200);
-      var width = Math.max.apply(null, rows.map(function(r){ return r.length; }));
-      var best = 0;
-      for (var c=0; c<width; c++){
-        var hits = sample.filter(function(r){ return r[c] && looksLikePostcode(r[c]); }).length;
-        if (hits > best){ best = hits; pcCol = c; }
-      }
-    }
-    var header = hasHeader ? first : first.map(function(_, i){ return 'column_'+(i+1); });
-    return {header:header, rows:hasHeader ? rows.slice(1) : rows, pcCol:pcCol};
+    var x = parseNum(a), y = parseNum(b);
+    if (isNaN(x) || isNaN(y)) return null;
+    if (inUkLat(x) && inUkLon(y)) return {lat:x, lon:y};
+    if (inUkLat(y) && inUkLon(x)) return {lat:y, lon:x};
+    if (Math.abs(x) <= 90 && Math.abs(y) <= 180) return {lat:x, lon:y};
+    return null;
   }
 
+  function isDataCell(c){
+    return looksLikePostcode(c) || !isNaN(parseNum(c)) || coordPair(c) != null;
+  }
+
+  // Turns pasted text or a file into a table plus where to read each row's location from:
+  // {header, rows, hasHeader, mode:'single', col} or {..., mode:'pair', latCol, lonCol}
+  function readBatchInput(text){
+    text = text.replace(/^﻿/, '');
+    var lines = text.split(/\r?\n/).filter(function(l){ return l.trim() !== ''; });
+    var firstLine = lines[0] || '';
+    var delim = firstLine.indexOf('\t') > -1 ? '\t' : (firstLine.indexOf(',') > -1 ? ',' : (firstLine.indexOf(';') > -1 ? ';' : null));
+    var rows = delim ? parseDelimited(text, delim) : lines.map(function(l){ return [l.trim()]; });
+    if (!rows.length) return {header:[], rows:[], mode:null};
+
+    // a loop, not Math.max.apply - that passes every row as an argument and overflows the stack on big files
+    var width = 0;
+    rows.forEach(function(r){ if (r.length > width) width = r.length; });
+    var first = rows[0];
+    // A single-column list only has a header if it's obviously one, so a typo on line 1 isn't swallowed
+    var hasHeader = width === 1
+      ? /post\s*code|^pcds?$|lat|lon|coord|location/i.test(first[0]) && !isDataCell(first[0])
+      : !first.some(isDataCell);
+    var header = hasHeader ? first : [];
+    for (var h = header.length; h < width; h++) header.push(width === 1 && !hasHeader ? 'input' : 'column_'+(h+1));
+    var body = hasHeader ? rows.slice(1) : rows;
+    var result = {header:header, rows:body, hasHeader:hasHeader};
+
+    if (hasHeader){
+      var pcCol = -1, latCol = -1, lonCol = -1;
+      first.forEach(function(name, i){
+        name = name.trim();
+        if (pcCol === -1 && /post\s*_?\s*code|^pcds?$/i.test(name)) pcCol = i;
+        if (latCol === -1 && /^lat(itude)?\b|^y$/i.test(name)) latCol = i;
+        if (lonCol === -1 && /^(lon|lng|long)(gitude)?\b|^x$/i.test(name)) lonCol = i;
+      });
+      if (pcCol > -1) return Object.assign(result, {mode:'single', col:pcCol});
+      if (latCol > -1 && lonCol > -1) return Object.assign(result, {mode:'pair', latCol:latCol, lonCol:lonCol});
+    }
+
+    // No usable header: score every column (postcodes or "lat lon" in one cell) and every
+    // neighbouring pair of columns (lat and lon side by side) on a sample, and take the best
+    var sample = body.slice(0, 200);
+    var best = {hits:0, mode:null};
+    for (var c = 0; c < width; c++){
+      var hits = sample.filter(function(r){ return r[c] && (looksLikePostcode(r[c]) || coordPair(r[c])); }).length;
+      if (hits > best.hits) best = {hits:hits, mode:'single', col:c};
+      if (c + 1 < width){
+        var pairHits = sample.filter(function(r){
+          var p = coordPair(r[c], r[c+1]);
+          return p && r[c+1] != null && String(r[c+1]).trim() !== '' && inUkLat(p.lat);
+        }).length;
+        if (pairHits > best.hits){
+          var p0 = sample.map(function(r){ return [parseNum(r[c]), parseNum(r[c+1])]; }).find(function(v){ return !isNaN(v[0]) && !isNaN(v[1]); });
+          var latFirst = !p0 || inUkLat(p0[0]);
+          best = {hits:pairHits, mode:'pair', latCol:latFirst ? c : c+1, lonCol:latFirst ? c+1 : c};
+        }
+      }
+    }
+    if (!best.mode) return Object.assign(result, {mode:null});
+    return Object.assign(result, best);
+  }
+
+  // What a row asks for: a postcode, a coordinate, or nothing usable
+  function rowInput(table, row){
+    var raw = table.mode === 'pair' ? row[table.latCol] : row[table.col];
+    var coord = table.mode === 'pair' ? (coordPair(row[table.latCol], row[table.lonCol]) || coordPair(raw)) : coordPair(raw);
+    if (coord) return {kind:'coord', lat:coord.lat, lon:coord.lon};
+    raw = String(raw == null ? '' : raw);
+    if (!raw.trim()) return {kind:'bad', method:'invalid', note:'Blank'};
+    var q = parseInput(raw);
+    if (q && q.error === 'unknown-area'){
+      return looksLikePostcode(raw)
+        ? {kind:'bad', method:'outside_coverage', note:'Postcode area '+q.area+' is outside England & Wales'}
+        : {kind:'bad', method:'invalid', note:'Not a recognisable postcode or coordinate'};
+    }
+    if (!q) return {kind:'bad', method:'invalid', note:'Not a recognisable postcode or coordinate'};
+    if (q.type !== 'full') return {kind:'bad', method:'invalid', note:'Not a full postcode (district/sector only)'};
+    return {kind:'pc', q:q};
+  }
+
+  function rowInputText(table, row){
+    if (table.mode === 'pair'){
+      var a = String(row[table.latCol] || '').trim(), b = String(row[table.lonCol] || '').trim();
+      return a + (b ? ', ' + b : '');
+    }
+    return String(row[table.col] || '');
+  }
+
+  // ---- coordinate -> zone, against the map's boundaries (simplified to ~30m) ----
+  var COORD_EDGE_M = 50;      // closer than this to a zone edge -> medium confidence
+  var COORD_MAX_SNAP_M = 2000; // further than this outside every zone -> outside coverage
+  var mapZonesP = null, zoneGeomP = null;
+
+  function loadMapZones(){
+    if (!mapZonesP) mapZonesP = fetch('map_zones.json').then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status+' loading map_zones.json');
+      return r.json();
+    });
+    return mapZonesP;
+  }
+
+  // Zone boundaries as a grid index of segments, so a point only ever looks at the edges near
+  // it (or in its own row, for the inside test) rather than all ~100k of them
+  var GRID_DEG = 0.01; // ~1.1km north-south, ~0.7km east-west
+  function cellX(lon){ return Math.floor(lon / GRID_DEG); }
+  function cellY(lat){ return Math.floor(lat / GRID_DEG); }
+  function cellKey(cx, cy){ return cy * 100000 + cx; }
+
+  function loadZoneGeom(){
+    if (!zoneGeomP) zoneGeomP = loadMapZones().then(function(gj){
+      var grid = new Map(), rowCells = new Map();
+      var codes = gj.features.map(function(f, zi){
+        var polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+        polys.forEach(function(poly){ poly.forEach(function(ring){
+          for (var i = 0, j = ring.length - 1; i < ring.length; j = i++){
+            // [zone, x1, y1, x2, y2, last ray-cast stamp]
+            var seg = [zi, ring[j][0], ring[j][1], ring[i][0], ring[i][1], 0];
+            var x0 = cellX(Math.min(seg[1], seg[3])), x1 = cellX(Math.max(seg[1], seg[3]));
+            var y0 = cellY(Math.min(seg[2], seg[4])), y1 = cellY(Math.max(seg[2], seg[4]));
+            for (var cy = y0; cy <= y1; cy++) for (var cx = x0; cx <= x1; cx++){
+              var k = cellKey(cx, cy), list = grid.get(k);
+              if (!list){
+                grid.set(k, list = []);
+                if (!rowCells.has(cy)) rowCells.set(cy, []);
+                rowCells.get(cy).push(cx);
+              }
+              list.push(seg);
+            }
+          }
+        }); });
+        return f.properties.code;
+      });
+      // per row: occupied cells sorted west to east, for the inside test's eastward ray
+      var rows = new Map();
+      rowCells.forEach(function(xs, cy){
+        xs.sort(function(a, b){ return a - b; });
+        rows.set(cy, {xs:xs, lists:xs.map(function(cx){ return grid.get(cellKey(cx, cy)); })});
+      });
+      // cellZone caches which zone (or -1 for none) fills a cell that no boundary crosses
+      return {codes:codes, grid:grid, rows:rows, cellZone:new Map()};
+    });
+    return zoneGeomP;
+  }
+
+  // Even-odd ray cast eastward from the point, counting crossings per zone. A segment that
+  // crosses the ray is always indexed in the ray's own row of cells, so only that row is scanned.
+  var rayStamp = 0;
+  function zoneContaining(lon, lat, geom){
+    var row = geom.rows.get(cellY(lat));
+    if (!row) return -1;
+    var xs = row.xs, pcx = cellX(lon), lo = 0, hi = xs.length;
+    while (lo < hi){ var mid = (lo + hi) >> 1; if (xs[mid] < pcx) lo = mid + 1; else hi = mid; }
+    var stamp = ++rayStamp, odd = {};
+    for (var c = lo; c < xs.length; c++){
+      var list = row.lists[c];
+      for (var s = 0; s < list.length; s++){
+        var seg = list[s];
+        if (seg[5] === stamp) continue; // already counted from a cell further west
+        seg[5] = stamp;
+        if ((seg[2] > lat) !== (seg[4] > lat) && lon < seg[1] + (lat - seg[2]) * (seg[3] - seg[1]) / (seg[4] - seg[2])) odd[seg[0]] = !odd[seg[0]];
+      }
+    }
+    for (var zi in odd) if (odd[zi]) return +zi;
+    return -1;
+  }
+
+  // Nearest boundary segment within `limit` metres -> {d, zi}, using a local flat projection at
+  // the point's latitude (plenty accurate over the couple of km that matter). onlyZone limits
+  // the search to one zone's edges.
+  function nearestEdge(lon, lat, geom, limit, onlyZone){
+    var kx = Math.cos(lat * Math.PI / 180) * 111320, ky = 110574;
+    var rx = Math.ceil(limit / (kx * GRID_DEG)), ry = Math.ceil(limit / (ky * GRID_DEG));
+    var pcx = cellX(lon), pcy = cellY(lat), best = {d:limit, zi:-1};
+    for (var cy = pcy - ry; cy <= pcy + ry; cy++){
+      for (var cx = pcx - rx; cx <= pcx + rx; cx++){
+        var list = geom.grid.get(cellKey(cx, cy));
+        if (!list) continue;
+        for (var s = 0; s < list.length; s++){
+          var seg = list[s];
+          if (onlyZone != null && seg[0] !== onlyZone) continue;
+          var ax = (seg[1] - lon) * kx, ay = (seg[2] - lat) * ky;
+          var dx = (seg[3] - seg[1]) * kx, dy = (seg[4] - seg[2]) * ky, len2 = dx*dx + dy*dy;
+          var t = len2 ? Math.max(0, Math.min(1, -(ax*dx + ay*dy) / len2)) : 0;
+          var ex = ax + t*dx, ey = ay + t*dy, d = Math.sqrt(ex*ex + ey*ey);
+          if (d < best.d) best = {d:d, zi:seg[0]};
+        }
+      }
+    }
+    return best;
+  }
+
+  function lookupCoord(lat, lon, geom, zoneByCode){
+    var res = Object.assign({}, EMPTY_RESULT, {type:'coordinates'});
+    var k = cellKey(cellX(lon), cellY(lat)), zi;
+    if (geom.grid.has(k)) zi = zoneContaining(lon, lat, geom);
+    else {
+      // no boundary crosses this cell, so every point in it is in the same zone (or none)
+      zi = geom.cellZone.get(k);
+      if (zi === undefined){ zi = zoneContaining(lon, lat, geom); geom.cellZone.set(k, zi); }
+    }
+    var dist = 0;
+    if (zi > -1){
+      res.method = 'within';
+      var edge = nearestEdge(lon, lat, geom, COORD_EDGE_M, zi);
+      res.confidence = edge.zi > -1 ? 'medium' : 'high';
+      if (edge.zi > -1) res.note = 'Within '+COORD_EDGE_M+' m of a zone boundary; check against the map';
+    } else {
+      var near = nearestEdge(lon, lat, geom, COORD_MAX_SNAP_M);
+      if (near.zi === -1){
+        res.method = 'outside_coverage';
+        res.note = 'More than '+(COORD_MAX_SNAP_M/1000)+' km from every zone: outside England & Wales, offshore, or in a gap in the source boundaries';
+        return res;
+      }
+      zi = near.zi; dist = near.d;
+      res.method = 'nearest';
+      res.confidence = 'low';
+      res.note = 'Outside every zone boundary; nearest zone used ('+fmtDist(dist)+' away)';
+    }
+    var z = zoneByCode[geom.codes[zi]] || {};
+    res.company = z.c || ''; res.zone = z.n || ''; res.code = z.code || ''; res.region = z.r || '';
+    res.dist = Math.round(dist);
+    return res;
+  }
+
+  // ---- postcode -> zone ----
   // high: inside a boundary and agrees with MOSL's sector table
   // medium: inside a boundary, but MOSL's table disagrees or couldn't check it
   // low: outside every boundary, snapped to the nearest zone
@@ -832,43 +1103,31 @@ svg.leaflet-zoom-animated { will-change: transform; }
     return (row.qcode === '1' || row.qcode === '2') ? 'medium' : 'high';
   }
 
-  var EMPTY_RESULT = {postcode:'', company:'', zone:'', code:'', region:'', lad:'', method:'', dist:'', qa:'', confidence:'none', note:''};
+  var EMPTY_RESULT = {type:'', postcode:'', company:'', zone:'', code:'', region:'', lad:'', method:'', dist:'', qa:'', confidence:'none', note:''};
 
-  function lookupOne(raw, zones, lads){
-    var res = Object.assign({}, EMPTY_RESULT);
-    var q = parseInput(String(raw || ''));
-    if (!q){ res.method = 'invalid'; res.note = 'Blank'; return Promise.resolve(res); }
-    if (q.error === 'unknown-area'){
-      res.method = looksLikePostcode(raw) ? 'outside_coverage' : 'invalid';
-      res.note = res.method === 'invalid' ? 'Not a recognisable postcode' : 'Postcode area '+q.area+' is outside England & Wales';
-      return Promise.resolve(res);
-    }
-    if (q.type !== 'full'){ res.method = 'invalid'; res.note = 'Not a full postcode (district/sector only)'; return Promise.resolve(res); }
-    res.postcode = q.display;
-    return loadShardIndex(q.area).then(function(idx){
-      var row = idx.get(q.rest);
-      if (!row){ res.method = 'not_found'; res.note = 'Not in the live ONS Postcode Directory (Aug 2026): terminated, mistyped, or too new'; return res; }
-      var z = row.zid != null ? zones[row.zid] : null;
-      res.company = z ? z.c : '';
-      res.zone = z ? z.n : '';
-      res.code = z ? z.code : '';
-      res.region = z ? z.r : '';
-      res.lad = row.ladid != null ? (lads[row.ladid] || '') : '';
-      res.method = row.mcode === '1' ? 'nearest' : (row.mcode === '2' ? 'no_coordinates' : 'within');
-      res.dist = row.mcode === '1' && row.dist != null ? Math.round(row.dist) : (row.mcode === '2' ? '' : 0);
-      res.qa = row.qcode === '1' ? 'mismatch' : (row.qcode === '2' ? 'not_checked' : 'match');
-      if (row.mcode === '2') res.qa = '';
-      res.confidence = batchConfidence(row);
-      if (row.mcode === '1') res.note = 'Outside every zone boundary; nearest zone used ('+fmtDist(row.dist)+' away)';
-      else if (row.mcode === '2') res.note = 'No grid reference in ONSPD, so no zone could be assigned';
-      else if (row.qcode === '1') res.note = "Disagrees with MOSL's sector-level table; likely a boundary-edge case";
-      else if (row.qcode === '2') res.note = "Not in MOSL's sector-level table, so couldn't be cross-checked";
-      return res;
-    });
+  function lookupPostcode(q, idx, zones, lads){
+    var res = Object.assign({}, EMPTY_RESULT, {type:'postcode', postcode:q.display});
+    var row = idx.get(q.rest);
+    if (!row){ res.method = 'not_found'; res.note = 'Not in the live ONS Postcode Directory (Aug 2026): terminated, mistyped, or too new'; return res; }
+    var z = row.zid != null ? zones[row.zid] : null;
+    res.company = z ? z.c : '';
+    res.zone = z ? z.n : '';
+    res.code = z ? z.code : '';
+    res.region = z ? z.r : '';
+    res.lad = row.ladid != null ? (lads[row.ladid] || '') : '';
+    res.method = row.mcode === '1' ? 'nearest' : (row.mcode === '2' ? 'no_coordinates' : 'within');
+    res.dist = row.mcode === '1' && row.dist != null ? Math.round(row.dist) : (row.mcode === '2' ? '' : 0);
+    res.qa = row.mcode === '2' ? '' : (row.qcode === '1' ? 'mismatch' : (row.qcode === '2' ? 'not_checked' : 'match'));
+    res.confidence = batchConfidence(row);
+    if (row.mcode === '1') res.note = 'Outside every zone boundary; nearest zone used ('+fmtDist(row.dist)+' away)';
+    else if (row.mcode === '2') res.note = 'No grid reference in ONSPD, so no zone could be assigned';
+    else if (row.qcode === '1') res.note = "Disagrees with MOSL's sector-level table; likely a boundary-edge case";
+    else if (row.qcode === '2') res.note = "Not in MOSL's sector-level table, so couldn't be cross-checked";
+    return res;
   }
 
   var RESULT_COLS = [
-    ['postcode','postcode'], ['water_company','company'], ['wrz_name','zone'], ['wrz_code','code'],
+    ['input_type','type'], ['postcode','postcode'], ['water_company','company'], ['wrz_name','zone'], ['wrz_code','code'],
     ['wrz_region','region'], ['local_authority','lad'], ['match_method','method'], ['snap_distance_m','dist'],
     ['mosl_sector_qa','qa'], ['confidence','confidence'], ['note','note']
   ];
@@ -879,13 +1138,14 @@ svg.leaflet-zoom-animated { will-change: transform; }
   }
 
   var CONF_PILL = {
-    high:   {cls:'good',    label:'High'},
-    medium: {cls:'warn',    label:'Medium'},
-    low:    {cls:'bad',     label:'Low'},
-    none:   {cls:'neutral', label:'No match'}
+    high:   {cls:'good',    label:'High',     desc:'Inside the zone boundary and confirmed by MOSL&rsquo;s sector table (coordinates: well inside the boundary).'},
+    medium: {cls:'warn',    label:'Medium',   desc:'Inside the boundary, but MOSL&rsquo;s table disagrees or doesn&rsquo;t cover it (coordinates: within 50&nbsp;m of a zone edge).'},
+    low:    {cls:'bad',     label:'Low',      desc:'Outside every boundary, so the nearest zone was used &mdash; the distance is in the CSV.'},
+    none:   {cls:'neutral', label:'No match', desc:'Invalid, not found, outside England &amp; Wales, or no location available.'}
   };
 
-  var batchFileText = null, batchFileBase = 'postcodes';
+  var batchFileText = null, batchFileBase = null;
+  var BATCH_CHUNK = 5000;
 
   function runBatch(){
     var out = document.getElementById('batchResult');
@@ -893,21 +1153,64 @@ svg.leaflet-zoom-animated { will-change: transform; }
     var text = batchFileText != null ? batchFileText : document.getElementById('batchInput').value;
     var table = readBatchInput(text);
 
-    if (!table.rows.length){ out.innerHTML = '<div class="msg-card">Paste some postcodes or upload a file first.</div>'; return; }
-    if (table.pcCol === -1){ out.innerHTML = '<div class="msg-card">Couldn&rsquo;t find a postcode column. Give it a header like <b>Postcode</b>, or make sure the column contains full postcodes.</div>'; return; }
+    if (!table.rows.length){ out.innerHTML = '<div class="msg-card">Paste some postcodes or coordinates, or upload a file first.</div>'; return; }
+    if (!table.mode){ out.innerHTML = '<div class="msg-card">Couldn&rsquo;t find any postcodes or coordinates. Give the column a header like <b>Postcode</b>, or <b>Latitude</b> and <b>Longitude</b>.</div>'; return; }
     if (table.rows.length > BATCH_MAX_ROWS){ out.innerHTML = '<div class="msg-card">That&rsquo;s '+table.rows.length.toLocaleString()+' rows &mdash; the limit is '+BATCH_MAX_ROWS.toLocaleString()+' at a time. For bigger jobs, download the full dataset from the Data tab.</div>'; return; }
 
-    btn.disabled = true;
-    out.innerHTML = '<div class="msg-card">Looking up '+table.rows.length.toLocaleString()+' postcode'+(table.rows.length===1?'':'s')+'&hellip;</div>';
+    var inputs = table.rows.map(function(r){ return rowInput(table, r); });
+    var areas = {}, needGeom = false;
+    inputs.forEach(function(inp){
+      if (inp.kind === 'pc') areas[inp.q.area] = true;
+      if (inp.kind === 'coord') needGeom = true;
+    });
+    var areaList = Object.keys(areas);
 
-    Promise.all([zonesP, ladsP]).then(function(meta){
-      return Promise.all(table.rows.map(function(r){ return lookupOne(r[table.pcCol], meta[0], meta[1]); }));
+    btn.disabled = true;
+    var total = inputs.length;
+    function progress(done){
+      out.innerHTML = '<div class="msg-card">Looking up '+(done ? done.toLocaleString()+' of ' : '')+total.toLocaleString()+' row'+(total===1?'':'s')+'&hellip;</div>';
+    }
+    progress(0);
+
+    Promise.all([zonesP, ladsP, needGeom ? loadZoneGeom() : null].concat(areaList.map(loadShardIndex))).then(function(res){
+      var zones = res[0], lads = res[1], geom = res[2], idxByArea = {};
+      areaList.forEach(function(a, i){ idxByArea[a] = res[3 + i]; });
+      var zoneByCode = {};
+      zones.forEach(function(z){ if (z && z.code) zoneByCode[z.code] = z; });
+
+      // Work in chunks so big batches don't freeze the page, with a progress count between them
+      return new Promise(function(resolve){
+        var results = new Array(total), i = 0;
+        (function step(){
+          var end = Math.min(i + BATCH_CHUNK, total);
+          for (; i < end; i++){
+            var inp = inputs[i];
+            if (inp.kind === 'pc') results[i] = lookupPostcode(inp.q, idxByArea[inp.q.area], zones, lads);
+            else if (inp.kind === 'coord') results[i] = lookupCoord(inp.lat, inp.lon, geom, zoneByCode);
+            else results[i] = Object.assign({}, EMPTY_RESULT, {method:inp.method, note:inp.note});
+          }
+          if (i < total){ progress(i); setTimeout(step, 0); }
+          else resolve(results);
+        })();
+      });
     }).then(function(results){
       renderBatch(table, results);
     }).catch(function(err){
       out.innerHTML = '<div class="msg-card">Couldn&rsquo;t load the lookup data. Please try again.</div>';
       console.error(err);
     }).finally(function(){ btn.disabled = false; });
+  }
+
+  function batchSourceLabel(table){
+    if (table.mode === 'pair') return 'coordinates from '+esc(table.header[table.latCol])+' + '+esc(table.header[table.lonCol]);
+    if (!table.hasHeader && table.header.length === 1) return 'pasted list';
+    return 'read from '+esc(table.header[table.col]);
+  }
+
+  function batchFilename(){
+    if (batchFileBase) return batchFileBase + '_water_resource_zones.csv';
+    var d = new Date(), pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    return 'water_resource_zones_' + d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + '.csv';
   }
 
   function renderBatch(table, results){
@@ -917,7 +1220,7 @@ svg.leaflet-zoom-animated { will-change: transform; }
     var total = results.length;
 
     var html = '<div class="result-card">';
-    html += '<div class="breakdown-head"><div><div class="eyebrow" style="margin-bottom:4px;">'+total.toLocaleString()+' row'+(total===1?'':'s')+' &middot; postcode column: '+esc(table.header[table.pcCol] || 'input')+'</div>';
+    html += '<div class="breakdown-head"><div><div class="eyebrow" style="margin-bottom:4px;">'+total.toLocaleString()+' row'+(total===1?'':'s')+' &middot; '+batchSourceLabel(table)+'</div>';
     html += '<div class="breakdown-title">'+(total - counts.none).toLocaleString()+' matched to a zone</div></div>';
     html += '<button type="button" class="dl-btn" id="batchDlBtn">Download CSV</button></div>';
 
@@ -926,12 +1229,16 @@ svg.leaflet-zoom-animated { will-change: transform; }
       if (counts[k]) html += '<span class="pill '+CONF_PILL[k].cls+'">'+CONF_PILL[k].label+': '+counts[k].toLocaleString()+'</span>';
     });
     html += '</div>';
-    html += '<div class="note-line"><b>High</b> = inside the zone boundary and agrees with MOSL&rsquo;s own sector table. <b>Medium</b> = inside the boundary, but MOSL&rsquo;s table disagrees or couldn&rsquo;t check it. <b>Low</b> = fell outside every boundary and was snapped to the nearest zone (distance in the CSV). <b>No match</b> = invalid, not found, outside England &amp; Wales, or no coordinates.</div>';
+    html += '<div class="conf-key">';
+    ['high','medium','low','none'].forEach(function(k){
+      html += '<div><span class="pill '+CONF_PILL[k].cls+'">'+CONF_PILL[k].label+'</span><span>'+CONF_PILL[k].desc+'</span></div>';
+    });
+    html += '</div>';
 
     html += '<div class="batch-table-wrap"><table class="batch"><thead><tr><th>Input</th><th>Zone</th><th>Company</th><th>Confidence</th></tr></thead><tbody>';
     results.slice(0, BATCH_PREVIEW_ROWS).forEach(function(r, i){
       var p = CONF_PILL[r.confidence];
-      html += '<tr><td class="mono">'+esc(table.rows[i][table.pcCol] || '')+'</td>';
+      html += '<tr><td class="mono">'+esc(rowInputText(table, table.rows[i]))+'</td>';
       html += '<td>'+(r.zone ? esc(r.zone)+(r.code ? '<div class="bd-company mono">'+esc(r.code)+'</div>' : '') : '<span class="bd-company">'+esc(r.note)+'</span>')+'</td>';
       html += '<td>'+esc(r.company || '')+'</td>';
       html += '<td><span class="pill '+p.cls+'"'+(r.note && r.zone ? ' title="'+esc(r.note)+'"' : '')+'>'+p.label+'</span></td></tr>';
@@ -947,13 +1254,13 @@ svg.leaflet-zoom-animated { will-change: transform; }
       var header = table.header.concat(RESULT_COLS.map(function(c){ return c[0]; }));
       var lines = [header.map(csvCell).join(',')];
       results.forEach(function(r, i){
-        var orig = table.rows[i].slice();
+        var orig = table.rows[i].slice(0, table.header.length);
         while (orig.length < table.header.length) orig.push('');
         lines.push(orig.concat(RESULT_COLS.map(function(c){ return r[c[1]]; })).map(csvCell).join(','));
       });
       // BOM so Excel opens it as UTF-8
       var blob = new Blob(['﻿' + lines.join('\r\n') + '\r\n'], {type:'text/csv'});
-      saveBlob(blob, batchFileBase + '_water_zones.csv').then(function(res){
+      saveBlob(blob, batchFilename()).then(function(res){
         status.textContent = res && res.status === 'saved' ? '' : 'Delivered.';
       }).catch(function(err){
         if (!(err && err.code === 'declined')){ status.textContent = 'Couldn’t download — try again.'; console.error(err); }
@@ -965,7 +1272,7 @@ svg.leaflet-zoom-animated { will-change: transform; }
     var reader = new FileReader();
     reader.onload = function(){
       batchFileText = reader.result;
-      batchFileBase = file.name.replace(/\.[^.]+$/, '') || 'postcodes';
+      batchFileBase = file.name.replace(/\.[^.]+$/, '') || null;
       var input = document.getElementById('batchInput');
       input.value = '';
       input.placeholder = 'Using uploaded file — type or paste here to use that instead';
@@ -976,7 +1283,7 @@ svg.leaflet-zoom-animated { will-change: transform; }
   }
 
   function clearBatchFile(){
-    batchFileText = null; batchFileBase = 'postcodes';
+    batchFileText = null; batchFileBase = null;
     document.getElementById('batchFileName').textContent = '';
     document.getElementById('batchFile').value = '';
   }
@@ -1003,19 +1310,27 @@ svg.leaflet-zoom-animated { will-change: transform; }
     map:    {btn: document.getElementById('tabBtnMap'),    panel: document.getElementById('panel-map')},
     data:   {btn: document.getElementById('tabBtnData'),   panel: document.getElementById('panel-data')}
   };
-  var mapInited = false, dataInited = false;
+  var mapInited = false, dataInited = false, currentTab = 'search';
+  var aboutBtn = document.getElementById('aboutBtn'), aboutPanel = document.getElementById('panel-about');
 
+  // 'about' isn't one of the tab buttons - it's opened from the header, and replaces the tab content
   function activateTab(which){
     Object.keys(TABS).forEach(function(key){
       var active = key===which;
       TABS[key].btn.setAttribute('aria-selected', active);
       TABS[key].panel.hidden = !active;
     });
+    aboutPanel.hidden = which !== 'about';
+    aboutBtn.setAttribute('aria-expanded', which === 'about');
+    if(which !== 'about') currentTab = which;
     if(which==='map' && !mapInited){ initMap(); mapInited = true; }
     if(which==='data' && !dataInited){ initDataTab(); dataInited = true; }
   }
   Object.keys(TABS).forEach(function(key){
     TABS[key].btn.addEventListener('click', function(){ activateTab(key); });
+  });
+  aboutBtn.addEventListener('click', function(){
+    activateTab(aboutPanel.hidden ? 'about' : currentTab);
   });
 
   // saturated, mid-dark hues chosen to stay legible over the basemap's pale khaki
@@ -1053,7 +1368,7 @@ svg.leaflet-zoom-animated { will-change: transform; }
 
       Promise.all([
         fetch('map_fill.json').then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status+' loading map_fill.json'); return r.json(); }),
-        fetch('map_zones.json').then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status+' loading map_zones.json'); return r.json(); })
+        loadMapZones()
       ]).then(function(res){
         var fillGj = res[0], zoneGj = res[1];
         var companies = Array.from(new Set(zoneGj.features.map(function(f){return f.properties.c;}))).sort();
@@ -1068,15 +1383,34 @@ svg.leaflet-zoom-animated { will-change: transform; }
           interactive:false
         }).addTo(map);
 
-        // invisible hit-testing layer on top: exact per-zone shapes, for hover/tooltip only
+        // invisible hit-testing layer on top: exact per-zone shapes, for hover/tooltip only.
+        // One shared tooltip, opened and closed here rather than with bindTooltip: Leaflet defers
+        // a bound tooltip that's hovered mid-drag until the drag ends, by which point the mouse
+        // has left that zone - so it opens and never gets a mouseout, stranding it on the map.
+        var tip = L.tooltip({direction:'auto', opacity:0.95});
+        var active = null;
+        function clearActive(){
+          map.closeTooltip(tip);
+          if (!active) return;
+          active.setStyle({stroke:false, fillOpacity:0.02});
+          active = null;
+        }
         var layer = L.geoJSON(zoneGj, {
           style: function(){ return {fillOpacity:0.02, stroke:false}; },
           onEachFeature: function(feature, lyr){
-            lyr.bindTooltip('<b>'+esc(feature.properties.n)+'</b><br>'+esc(feature.properties.c), {sticky:true});
-            lyr.on('mouseover', function(){ lyr.setStyle({stroke:true, color:'#1b2726', weight:2, fillOpacity:0.15}); });
-            lyr.on('mouseout', function(){ lyr.setStyle({stroke:false, fillOpacity:0.02}); });
+            lyr.on('mouseover', function(e){
+              if (map.dragging.moving()) return;
+              if (active !== lyr) clearActive();
+              active = lyr;
+              lyr.setStyle({stroke:true, color:'#1b2726', weight:2, fillOpacity:0.15});
+              tip.setContent('<b>'+esc(feature.properties.n)+'</b><br>'+esc(feature.properties.c)).setLatLng(e.latlng);
+              map.openTooltip(tip);
+            });
+            lyr.on('mousemove', function(e){ if (active === lyr) tip.setLatLng(e.latlng); });
+            lyr.on('mouseout', function(){ if (active === lyr) clearActive(); });
           }
         }).addTo(map);
+        map.on('movestart zoomstart mouseout', clearActive);
 
         map.invalidateSize();
         var b = layer.getBounds();
